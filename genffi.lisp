@@ -29,3 +29,41 @@
 	   :include-definitions ("lbfgs")
 	   ;:sysincludes '("/usr/local/include")
 	   :trace-c2ffi t )
+
+;; Sample code from 
+;; http://www.chokkan.org/software/liblbfgs/
+
+(defcallback evaluate lbfgsfloatval-t
+    ((instance :pointer)
+     (x (:pointer lbfgsfloatval-t))
+     (g (:pointer lbfgsfloatval-t))
+     (n :int)
+     (step lbfgsfloatval-t))
+  (let ((fx 0d0))
+    (declare (type double-float fx))
+    (dotimes (i n)
+      (let ((t1 (- 1d0 (cffi:mem-aref x lbfgsfloatval-t i)))
+	    (t2 (* 10d0
+		   (- (cffi:mem-aref x lbfgsfloatval-t (+ i 1))
+		      (expt (cffi:mem-aref x lbfgsfloatval-t i) 2)))))
+	(setf (cffi:mem-aref g lbfgsfloatval-t (+ i 1)) (* 20d0 t2)
+	      (cffi:mem-aref g lbfgsfloatval-t i)
+	      (* -2d0 (+ (* (cffi:mem-aref x lbfgsfloatval-t i)
+			    (cffi:mem-aref g lbfgsfloatval-t (+ 1 i)))
+			 t1))
+	      fx (+ fx (expt t1 2) (expt t2 2)))))
+    fx))
+
+(defcallback progress :int
+    ((instance :pointer)
+     (x (:pointer lbfgsfloatval-t))
+     (g (:pointer lbfgsfloatval-t))
+     (fx lbfgsfloatval-t)
+     (xnorm lbfgsfloatval-t)
+     (gnorm lbfgsfloatval-t)
+     (step lbfgsfloatval-t)
+     (n :int)
+     (k :int)
+     (ls :int))
+  (format t "iteration ~a" k))
+
